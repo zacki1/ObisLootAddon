@@ -1,0 +1,18 @@
+## Interface: 110100
+## Title: ObisLootAddon
+## Notes: Für mehr überblick beim Loot verteilen
+## Author: zacki
+## Version: 1.0.0
+## RequiredDeps:
+## X-Curse-Project-ID: 999999
+## SavedVariables:
+## SavedVariablesPerCharacter: ObisLootAddonDB
+
+#Libraries
+libs/Ace3/AceAddon-3.0/AceAddon-3.0.lua
+libs/Ace3/AceDB-3.0/AceDB-3.0.lua
+libs/LibDBIcon-1.0/embeds.xml
+
+#Main Files
+ObisLootAddon.lua
+Settings.lua
