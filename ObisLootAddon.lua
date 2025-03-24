@@ -6,7 +6,7 @@ local rolls ={
     offspec = {},
     transmog = {}
 }
-ObisLootAddon = ObisLootAddon or {}
+ObisLootAddon = LibStub("AceAddon-3.0"):NewAddon("ObisLootAddon", "AceEvent-3.0")
 local mainFrame = CreateFrame("Frame", "OlaMainFrame", UIParent, "BasicFrameTemplateWithInset")
 mainFrame:SetSize(500,350)
 mainFrame:SetPoint("CENTER",UIParent,"CENTER",0,0)
@@ -80,12 +80,8 @@ local function ErgebnisseAusgeben()
     table.wipe(rolls.offspec)
     table.wipe(rolls.transmog)
 end
-local eventListenerFrame = CreateFrame("Frame", "OlaEventListenerFrame", UIParent)
-local function eventHandler(self, event, ...)
-    local _, eventType = CombatLogGetCurrentEventInfo()
 
-    if event == "CHAT_MSG_SYSTEM" then
-        local msg = ...
+function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
         local isRoll,player,roll,maxroll = ParseRollText(msg)
         if(isRoll) then
             if maxroll == 100 then
@@ -97,8 +93,6 @@ local function eventHandler(self, event, ...)
             end
         end
     end
-end
-eventListenerFrame:SetScript("OnEvent", eventHandler)
 
 function ObisLootAddon:ToggleMainFrame()
     if not mainFrame:IsShown() then
@@ -113,12 +107,11 @@ local function Commands(msg, editbox)
     local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
     if cmd == "post" and args ~= "" then
         SendChatMessage(args, "RAID")
-        eventListenerFrame:RegisterEvent("CHAT_MSG_SYSTEM")
+        ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
     elseif cmd == "stop" then
         print("stop the count")
-        eventListenerFrame:UnregisterEvent("CHAT_MSG_SYSTEM")
+        ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
-        -- Handle removing of the contents of rest... to something.   
     else
         if mainFrame:IsShown() then
             mainFrame:Hide()

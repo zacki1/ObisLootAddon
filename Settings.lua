@@ -68,7 +68,6 @@ eventListenerFrame:SetScript("OnEvent", function (self, event)
     end
 end)
 
-local addon = LibStub("AceAddon-3.0"):NewAddon("ObisLootAddon")
 MinimapButton = LibStub("LibDBIcon-1.0", true)
 local miniButton = LibStub("LibDataBroker-1.1"):NewDataObject("ObisLootAddon", {
     type = "data source",
@@ -93,7 +92,7 @@ local miniButton = LibStub("LibDataBroker-1.1"):NewDataObject("ObisLootAddon", {
     end,
 })
 
-function addon:OnInitialize()
+function ObisLootAddon:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("MinimapPOS", {
         profile = {
             minimap = {
