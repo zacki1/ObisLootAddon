@@ -1,15 +1,21 @@
 
 --ENCOUNTER_START
 --RAID_INSTANCE_WELCOME
+--LOOT_HISTORY_UPDATE_ENCOUNTER
+--C_LootHistory.GetSortedDropsForEncounter(encounterID) : drops
 LootTrackingActive = false
 local ids = {
     --[[
     id = 0,
     items = {
-        [itemId] = {            
+        [itemId] = {   
+            count = 1,
             gewinner = {
-                player = "",
-                rollart = 0,
+                {
+                    player = "",
+                    roll = 0,
+                    rollart = 0,
+                }
             },
             rolls = {
                 player = "",
@@ -74,7 +80,9 @@ end
 local function GetCountWins(player)
     local count = 0
     for _, item in pairs(currentId.items) do
-        if item.gewinner.player == player then count = count + 1 end
+        for _, gewinner in pairs(item.gewinner) do
+            if gewinner.player == player then count = count + 1 end
+        end
     end
     return count
 end
@@ -99,9 +107,22 @@ end
 local function ErgebnisseAusgeben()
     table.sort(currentId.items[currentItem].rolls, SortRolls)
     local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls)
-    currentId.items[currentItem].gewinner = gewinner    
     for _, win in pairs(gewinner) do
-        print(win.rollArt .. ": " .. win.player .. " hat mit " .. win.roll .. "gewonnen!")
+        local msg = win.rollArt .. ": " .. win.player .. " hat mit " .. win.roll .. " gewonnen!"
+        print(msg)
+        SendChatMessage(msg, "RAID")
+    end
+    if #gewinner == currentId.items[currentItem].count then
+        currentId.items[currentItem].gewinner = gewinner
+    elseif #gewinner > currentId.items[currentItem].count then
+        currentId.items[currentItem].gewinner = gewinner
+        msg = "Unentschieden! Bitte \"/ola reroll\" ausführen"
+        print(msg)
+        SendChatMessage(msg, "RAID")
+    else
+        msg = "Fehler beim ermitteln der Gewinner"
+        print(msg)
+        SendChatMessage(msg, "RAID")
     end
 end
 
@@ -119,7 +140,6 @@ function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     if(isRoll) then
         if not HasAlreadyRolled(player) then
             table.insert(currentId.items[currentItem].rolls, {roll = roll, player = player, rollArt = rolls[maxroll]})
-            table.insert(currentId.items[currentItem].rolls, {roll = math.random(100), player = "Dummy", rollArt = rolls[100]})
         end
     end
 end
@@ -138,17 +158,36 @@ end
 
 local function Commands(msg, editbox)
     local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
-    if cmd == "post" and args ~= "" then
-        currentItem = args
-        currentId.items[currentItem] = {gewinner = {}, rolls = {}}
+    if cmd == "post" and args ~= "" then        
+        local _,_,item,count = string.find(args, "(%w+) (%d)$")
+        count = tonumber(count)
+        if not count then count = 1 end
+        currentItem = item
+        currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
         SendChatMessage(args, "RAID")
-        ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
+        if currentItem ~= "test" then
+            ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
+        else
+            currentId.items[currentItem].rolls = {{player = "Dummy1", roll = 100, rollArt = rolls[100]}, {player = "Dummy2", roll = 100, rollArt = rolls[100]}}
+            ErgebnisseAusgeben()
+        end
     elseif cmd == "stop" then
         ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
         SaveId()
+    elseif cmd == "reroll" then
+        SendChatMessage("Reroll für: " .. currentItem, "RAID")
+        local count = currentId.items[currentItem].count
+        currentItem = currentItem .. "_r"
+        currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
+
+        ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
     elseif cmd == "reset" then
-        table.wipe(ObisLootAddon.Ids[0])
+        table.wipe(ObisLootAddonDB.Ids[0])
+        currentId.id = 0
+        currentId.items = ObisLootAddonDB.Ids[0] or {}
+    elseif cmd == "dump" then
+        DevTools_Dump(currentId)
     else
         if mainFrame:IsShown() then
             mainFrame:Hide()
@@ -177,6 +216,5 @@ function ObisLootAddon:OnInitialize()
     end
     currentId.id = 0
     currentId.items = ObisLootAddonDB.Ids[0] or {}
-    currentId.items["test"] = {gewinner = {player = "Dummy", roll = 100}}
     ObisLootAddon:LoadMinimap()
 end
