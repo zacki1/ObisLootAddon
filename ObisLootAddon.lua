@@ -100,9 +100,8 @@ end
 
 local function ErgebnisseAusgeben()
     table.sort(currentId.items[currentItem].rolls, SortRolls)
-    DevTools_Dump(currentId.items[currentItem].rolls)
     local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls)
-    currentId.items[currentItem].gewinner = gewinner
+    currentId.items[currentItem].gewinner = gewinner    
     for _, win in pairs(gewinner) do
         print(win.rollArt .. ": " .. win.player .. " hat mit " .. win.roll .. "gewonnen!")
     end
@@ -124,6 +123,9 @@ function ObisLootAddon:ToggleMainFrame()
     end
 end
 
+local function SaveId()
+    ObisLootAddonDB.Ids[currentId.id] = currentId.items
+end
 
 local function Commands(msg, editbox)
     local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
@@ -133,9 +135,11 @@ local function Commands(msg, editbox)
         SendChatMessage(args, "RAID")
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
     elseif cmd == "stop" then
-        print("stop the count")
         ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
+        SaveId()
+    elseif cmd == "reset" then
+        table.wipe(ObisLootAddon.Ids[0])
     else
         if mainFrame:IsShown() then
             mainFrame:Hide()
@@ -153,4 +157,10 @@ function ObisLootAddon:GetInstanceInformation()
 	local zone, zonetype, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, mapid = GetInstanceInfo()
     if(zonetype ~= "raid") then return nil end
 	return zone, zonetype, difficultyIndex, difficultyName
+end
+
+function ObisLootAddon:OnInitialize()
+    currentId.id = 0
+    currentId.items = ObisLootAddonDB.Ids[0] or {}
+    self:LoadMinimap()
 end

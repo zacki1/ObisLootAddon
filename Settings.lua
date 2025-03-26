@@ -92,7 +92,7 @@ local miniButton = LibStub("LibDataBroker-1.1"):NewDataObject("ObisLootAddon", {
     end,
 })
 
-function ObisLootAddon:OnInitialize()
+function ObisLootAddon:LoadMinimap()
     self.db = LibStub("AceDB-3.0"):New("MinimapPOS", {
         profile = {
             minimap = {
