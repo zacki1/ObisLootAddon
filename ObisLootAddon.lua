@@ -1,6 +1,4 @@
-if not ObisLootAddonDB then
-    ObisLootAddonDB = {}
-end
+
 --ENCOUNTER_START
 --RAID_INSTANCE_WELCOME
 LootTrackingActive = false
@@ -171,7 +169,14 @@ function ObisLootAddon:GetInstanceInformation()
 end
 
 function ObisLootAddon:OnInitialize()
+    if not ObisLootAddonDB then
+        ObisLootAddonDB = {}
+    end
+    if not ObisLootAddonDB.Ids then
+        ObisLootAddonDB.Ids = {}
+    end
     currentId.id = 0
     currentId.items = ObisLootAddonDB.Ids[0] or {}
-    self:LoadMinimap()
+    currentId.items["test"] = {gewinner = {player = "Dummy", roll = 100}}
+    ObisLootAddon:LoadMinimap()
 end

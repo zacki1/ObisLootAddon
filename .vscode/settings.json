@@ -22,7 +22,9 @@
         "Settings",
         "AddonCompartmentFrame",
         "CHAT",
-        "Raid"
+        "Raid",
+        "FauxScrollFrame_Update",
+        "ChatFrame1EditBox"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
