@@ -168,16 +168,13 @@ local function Commands(msg, editbox)
         currentItem = item
         currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
         SendChatMessage(args, "RAID")
-        if currentItem ~= "test" then
-            ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
-        else
-            currentId.items[currentItem].rolls = {{player = "Dummy1", roll = 100, rollArt = rolls[100]}, {player = "Dummy2", roll = 100, rollArt = rolls[100]}}
-            ErgebnisseAusgeben()
-        end
+        ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
+
     elseif cmd == "stop" then
         ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
         SaveId()
+
     elseif cmd == "reroll" then
         SendChatMessage("Reroll für: " .. currentItem, "RAID")
         local count = currentId.items[currentItem].count
@@ -185,12 +182,15 @@ local function Commands(msg, editbox)
         currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
 
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
+
     elseif cmd == "reset" then
         table.wipe(ObisLootAddonDB.Ids[0])
         currentId.id = 0
         currentId.items = ObisLootAddonDB.Ids[0] or {}
+
     elseif cmd == "dump" then
         DevTools_Dump(currentId)
+        
     else
         if mainFrame:IsShown() then
             mainFrame:Hide()
