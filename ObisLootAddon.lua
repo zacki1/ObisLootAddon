@@ -158,9 +158,12 @@ end
 
 local function Commands(msg, editbox)
     local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
-    if cmd == "post" and args ~= "" then        
-        local _,_,item,count = string.find(args, "(%w+) (%d)$")
+    if cmd == "post" and args ~= "" then
+        local _,_,item,count = string.find(args, "(.-)%s?(%d?)$")
         count = tonumber(count)
+        print(args)
+        print(item)
+        print(count)
         if not count then count = 1 end
         currentItem = item
         currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
