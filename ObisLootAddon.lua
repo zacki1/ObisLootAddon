@@ -107,11 +107,22 @@ local function ErgebnisseAusgeben()
     end
 end
 
+local function HasAlreadyRolled(player)
+    local found = false
+    for _, roll in pairs(currentId.items[currentItem].rolls) do
+        found = roll.player == player
+        if found then break end
+    end
+    return found
+end
+
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     local isRoll,player,roll,maxroll = ParseRollText(msg)
     if(isRoll) then
-        table.insert(currentId.items[currentItem].rolls, {roll = roll, player = player, rollArt = rolls[maxroll]})
-        table.insert(currentId.items[currentItem].rolls, {roll = math.random(100), player = "Dummy", rollArt = rolls[100]})
+        if not HasAlreadyRolled(player) then
+            table.insert(currentId.items[currentItem].rolls, {roll = roll, player = player, rollArt = rolls[maxroll]})
+            table.insert(currentId.items[currentItem].rolls, {roll = math.random(100), player = "Dummy", rollArt = rolls[100]})
+        end
     end
 end
 
