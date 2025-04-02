@@ -4,33 +4,20 @@
 --LOOT_HISTORY_UPDATE_ENCOUNTER
 --C_LootHistory.GetSortedDropsForEncounter(encounterID) : drops
 LootTrackingActive = false
-local ids = {
-    --[[
-    id = 0,
-    items = {
-        [itemId] = {   
-            count = 1,
-            gewinner = {
-                {
-                    player = "",
-                    roll = 0,
-                    rollart = 0,
-                }
-            },
-            rolls = {
-                player = "",
-                roll = 0,
-                rollart = 0
-            },
-        },        
-    }
-    ]]
-}
-local currentId = {
+---@type id[]
+local ids = {}
+---@type id
+local currentId
+local IsReroll = false
+---@type id
+local currentIdDefault = {
     id = 0,
     items = {},
+    rerollArchive = {}
 }
+---@class item
 local currentItem
+---@type {[integer | string]: string | integer}
 local rolls ={
     [100] = "mainspec",
     [50] = "offspec",
@@ -39,37 +26,27 @@ local rolls ={
     ["offspec"] = 50,
     ["transmog"] = 10,
 }
-ObisLootAddon = LibStub("AceAddon-3.0"):NewAddon("ObisLootAddon", "AceEvent-3.0")
-local mainFrame = CreateFrame("Frame", "OlaMainFrame", UIParent, "BasicFrameTemplateWithInset")
-mainFrame:SetSize(500,350)
-mainFrame:SetPoint("CENTER",UIParent,"CENTER",0,0)
-mainFrame.TitleBg:SetHeight(30)
-mainFrame.title = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-mainFrame.title:SetPoint("TOPLEFT",mainFrame.TitleBg, "TOPLEFT", 5, -3)
-mainFrame.title:SetText("Obis Loot Addon")
-mainFrame:Hide()
 
-mainFrame:EnableMouse(true)
-mainFrame:SetMovable(true)
-mainFrame:RegisterForDrag("LeftButton")
-mainFrame:SetScript("OnDragStart", function (self)
-    self:StartMoving()
-end)
-mainFrame:SetScript("OnDragStop", function (self)
-    self:StopMovingOrSizing()
-end)
-
-table.insert(UISpecialFrames, "OlaMainFrame")
-
+---Returns the values of the roll system message
+---@param text string
+---@return roll? roll
 local function ParseRollText(text)
-    if not text or string.match(text, "(%a+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)") == nil then
-        return false
+    if not text then
+        return nil
     else
         local name, roll, max =
             string.match(text, "(%a+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)")
-        return true, name, tonumber(roll), tonumber(max)
+            name = GetUnitName(name, true)
+            print(name)
+        if not name then return nil end
+        return {player = name, roll = tonumber(roll), rollArt = rolls[tonumber(max)]}
     end
 end
+
+---Sort for rollArt then roll. Both descending order
+---@param left roll
+---@param right roll
+---@return boolean
 local function SortRolls(left, right)
     if left.rollArt ~= right.rollArt then
         return rolls[left.rollArt] > rolls[right.rollArt]
@@ -77,36 +54,49 @@ local function SortRolls(left, right)
 
     return left.roll > right.roll
 end
-local function GetCountWins(player)
+
+---Get number of Items won by player for given rollArt
+---@param player string
+---@param rollArt string
+---@return integer
+local function GetCountWins(player, rollArt)
     local count = 0
     for _, item in pairs(currentId.items) do
         for _, gewinner in pairs(item.gewinner) do
-            if gewinner.player == player then count = count + 1 end
+            if gewinner.player == player and gewinner.rollArt == rollArt then count = count + 1 end
         end
     end
     return count
 end
-local function ErmittleGewinner(rolls)
+
+---Get winners for given item
+---Returns multiple winners if draw or multiple instances of the item are rolled for
+---@param rolls table
+---@param count integer
+---@return table
+local function ErmittleGewinner(rolls, count)
     local gewinner = {}
     for i = 1,#rolls do
         local roll = rolls[i]
         local roll2 = rolls[i+1]
         if not roll2 or roll.rollArt ~= roll2.rollArt then
             table.insert(gewinner, roll)
-            break
-        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player) == GetCountWins(roll2.player) then
+        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) < GetCountWins(roll2.player,roll2.rollArt) then
             table.insert(gewinner, roll)
-        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player) < GetCountWins(roll2.player) then
+        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) == GetCountWins(roll2.player, roll2.rollArt) and roll.roll == roll2.roll then
             table.insert(gewinner, roll)
-            break
+            table.insert(gewinner, roll2)
+        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) == GetCountWins(roll2.player, roll2.rollArt) and roll.roll > roll2.roll then
+            table.insert(gewinner, roll)
         end
+        if #gewinner >= count then break end
     end
     return gewinner
 end
 
 local function ErgebnisseAusgeben()
     table.sort(currentId.items[currentItem].rolls, SortRolls)
-    local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls)
+    local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls, currentId.items[currentItem].count)
     for _, win in pairs(gewinner) do
         local msg = win.rollArt .. ": " .. win.player .. " hat mit " .. win.roll .. " gewonnen!"
         print(msg)
@@ -116,16 +106,20 @@ local function ErgebnisseAusgeben()
         currentId.items[currentItem].gewinner = gewinner
     elseif #gewinner > currentId.items[currentItem].count then
         currentId.items[currentItem].gewinner = gewinner
-        msg = "Unentschieden! Bitte \"/ola reroll\" ausführen"
+        local msg = "Unentschieden! Bitte \"/ola reroll\" ausführen"
         print(msg)
         SendChatMessage(msg, "RAID")
     else
-        msg = "Fehler beim ermitteln der Gewinner"
+        local msg = "Fehler beim ermitteln der Gewinner"
+        currentId.items[currentItem] = nil
         print(msg)
         SendChatMessage(msg, "RAID")
     end
 end
 
+---Check if the given name has already rolled for the item
+---@param player string
+---@return boolean
 local function HasAlreadyRolled(player)
     local found = false
     for _, roll in pairs(currentId.items[currentItem].rolls) do
@@ -135,41 +129,44 @@ local function HasAlreadyRolled(player)
     return found
 end
 
+---Check on reroll if the player has already rolled for the item before
+---@param player string
+---@return boolean
+local function IsRerollEligible(player)
+    local hasRolled = false
+    for _,winner in pairs(currentId.rerollArchive[currentItem].gewinner) do
+        if winner.player == player then hasRolled = true end
+    end
+    return hasRolled
+end
+
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
-    local isRoll,player,roll,maxroll = ParseRollText(msg)
-    if(isRoll) then
-        if not HasAlreadyRolled(player) then
-            table.insert(currentId.items[currentItem].rolls, {roll = roll, player = player, rollArt = rolls[maxroll]})
+    local roll = ParseRollText(msg)
+    if roll then
+        if not HasAlreadyRolled(roll.player) then
+            if not IsReroll then
+                table.insert(currentId.items[currentItem].rolls, roll)
+            elseif IsReroll and IsRerollEligible(roll.player) then
+                table.insert(currentId.items[currentItem].rolls, roll)
+            end
         end
     end
 end
 
-function ObisLootAddon:ToggleMainFrame()
-    if not mainFrame:IsShown() then
-        mainFrame:Show()
-    else
-        mainFrame:Hide()
-    end
-end
-
 local function SaveId()
-    ObisLootAddonDB.Ids[currentId.id] = currentId.items
+    ObisLootAddonDB.Ids[currentId.id] = currentId
 end
 
 local function Commands(msg, editbox)
-    local _, _, cmd, args = string.find(msg, "%s?(%w+)%s?(.*)")
-    if cmd == "post" and args ~= "" then
-        local _,_,item,count = string.find(args, "(.-)%s?(%d?)$")
+    local cmd, item, count = ObisLootAddon:GetArgs(msg, 3)
+    if cmd == "post" and item then
         count = tonumber(count)
-        print(args)
-        print(item)
-        print(count)
         if not count then count = 1 end
         currentItem = item
         currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
-        SendChatMessage(args, "RAID")
+        IsReroll = false
+        SendChatMessage(item, "RAID")
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
-
     elseif cmd == "stop" then
         ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
@@ -177,32 +174,22 @@ local function Commands(msg, editbox)
 
     elseif cmd == "reroll" then
         SendChatMessage("Reroll für: " .. currentItem, "RAID")
-        local count = currentId.items[currentItem].count
-        currentItem = currentItem .. "_r"
-        currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
-
+        local origCount = currentId.items[currentItem].count
+        currentId.rerollArchive[currentItem] = currentId.items[currentItem]
+        currentId.items[currentItem] = {count = origCount,gewinner = {}, rolls = {}}
+        IsReroll = true
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
 
     elseif cmd == "reset" then
-        table.wipe(ObisLootAddonDB.Ids[0])
-        currentId.id = 0
-        currentId.items = ObisLootAddonDB.Ids[0] or {}
-
+        table.wipe(ObisLootAddonDB.Ids)
+        currentId = currentIdDefault
     elseif cmd == "dump" then
         DevTools_Dump(currentId)
-        
-    else
-        if mainFrame:IsShown() then
-            mainFrame:Hide()
-        else
-            mainFrame:Show()
-        end
     end
 end
 
 
-SLASH_OLA1 = "/ola"
-SlashCmdList["OLA"] = Commands
+ObisLootAddon:RegisterChatCommand("ola", Commands)
 
 function ObisLootAddon:GetInstanceInformation()
 	local zone, zonetype, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, mapid = GetInstanceInfo()
@@ -217,7 +204,22 @@ function ObisLootAddon:OnInitialize()
     if not ObisLootAddonDB.Ids then
         ObisLootAddonDB.Ids = {}
     end
-    currentId.id = 0
-    currentId.items = ObisLootAddonDB.Ids[0] or {}
+    currentId = ObisLootAddonDB.Ids[0] or currentIdDefault
     ObisLootAddon:LoadMinimap()
+end
+
+function ObisLootAddon:GetRaidMembers()
+    local memberList = {}
+    for i = 1, 40 do
+        local name = GetRaidRosterInfo(i)
+        if name then
+            table.insert(memberList, name)
+        else
+            break;
+        end
+    end
+    table.sort(memberList, function(left, right)
+        return string.lower(left) < string.lower(right)
+    end)
+    return memberList
 end
