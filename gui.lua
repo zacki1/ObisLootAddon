@@ -50,7 +50,7 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	itemText:SetText(itemLink)
 	itemText:SetFullHeight(false)
 	itemText:SetCallback("OnEnter", function (widget)
-		--GameTooltip:SetOwner(itemText.label, "ANCHOR_TOP")
+		GameTooltip:SetOwner(itemText.frame, "ANCHOR_TOP")
 		GameTooltip:SetHyperlink(itemLink)
 		GameTooltip:Show()
 	end
