@@ -32,6 +32,7 @@ function Player:GetColoredName()
 end
 
 
+
 local PLAYER_MT = {
 	__index = Player,
 	--- @param self player
@@ -62,8 +63,10 @@ function ObisLootAddon:GetPlayer(playerid)
 		-- GUID with player
 		guid = playerid
 	elseif type(playerid) == "string" then
-		-- Assume UnitName
-		local name = Ambiguate(playerid, "none")
+        local name = string.match(playerid, "|c%d%d%d%d%d%d%d%d(%w+)|r")
+        if not name then
+            name = Ambiguate(playerid, "none")
+        end
 		guid = UnitGUID(name)
 	else
 		error(format("%s invalid player", tostring(playerid)), 2)
