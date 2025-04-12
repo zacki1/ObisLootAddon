@@ -239,7 +239,7 @@ end
 function ObisLootAddon:GetMemberNamesOfCurrentId()
     local names = {}
     for _,player in pairs(currentId.roster) do
-        ObisLootAddon:GetPlayer(player.guid)
+        player = ObisLootAddon:GetPlayer(player.guid)
         table.insert(names, player:GetColoredName())
     end
     return names

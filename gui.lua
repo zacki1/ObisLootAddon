@@ -28,7 +28,7 @@ end
 local function ChangeWinner(widget, event, index)
 	local item = widget:GetUserData("item")
 	local gewinner = widget:GetUserData("winner")
-	for _, winner in pairs(ObisLootAddonDB.Ids[0][item].gewinner) do
+	for _, winner in pairs(ObisLootAddonDB.Ids[0].items[item].gewinner) do
 		if winner.player.guid == gewinner.player.guid then
 			winner.player = ObisLootAddon:GetPlayer(widget.list[index])
 		end
