@@ -57,7 +57,7 @@ local function SortRolls(left, right)
     return left.roll > right.roll
 end
 
-function private:SortRoster(left, right)
+function private.SortRoster(left, right)
     return string.lower(left.name) < string.lower(right.name)
 end
 
@@ -223,8 +223,6 @@ function ObisLootAddon:GetRaidMembers()
         if name then
             local player = ObisLootAddon:GetPlayer(name)
             table.insert(memberList, player)
-        else
-            break;
         end
     end
     table.sort(memberList, private.SortRoster)
@@ -241,7 +239,7 @@ end
 function ObisLootAddon:GetMemberNamesOfCurrentId()
     local names = {}
     for _,player in pairs(currentId.roster) do
-        ObisLootAddon:GetPLayer(player.guid)
+        ObisLootAddon:GetPlayer(player.guid)
         table.insert(names, player:GetColoredName())
     end
     return names
@@ -255,8 +253,7 @@ end
 function ObisLootAddon:GROUP_JOINED()
     local memberList = ObisLootAddon:GetRaidMembers()
     for _, member in pairs(memberList) do
-        local player = ObisLootAddon:GetPlayer(member)
-        ObisLootAddon:AddToMainRoster(player)
-        ObisLootAddon:AddToCurrentId(player)
+        ObisLootAddon:AddToMainRoster(member)
+        ObisLootAddon:AddToCurrentId(member)
     end
 end
