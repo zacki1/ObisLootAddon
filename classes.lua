@@ -1,4 +1,5 @@
 ---@meta classes
+---@class roster<guid, player>: {[string]: player}
 
 ---@class roll
 ---@field player player
@@ -17,7 +18,7 @@
 ---@field id integer
 ---@field items itemDict
 ---@field rerollArchive itemDict
----@field roster string[]
+---@field roster roster
 
 ---@class player
 ---@field name string
@@ -26,5 +27,3 @@
 ---@field class string
 ---@field coloredName string
 ---@field isMain boolean
-
----@class roster<guid, player>: {[string]: player}

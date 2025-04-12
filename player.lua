@@ -1,3 +1,4 @@
+local private = select(2,...)
 
 ---@class player
 local Player = ObisLootAddon.Player
@@ -10,6 +11,7 @@ function ObisLootAddon:AddToMainRoster(player)
     if not  ObisLootAddonDB.MainRoster[player.guid] then
         ObisLootAddonDB.MainRoster[player.guid] = player
     end
+    table.sort(ObisLootAddonDB.MainRoster, private.SortRoster)
 end
 
 ---@return string playername

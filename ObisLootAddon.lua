@@ -3,6 +3,7 @@
 --RAID_INSTANCE_WELCOME
 --LOOT_HISTORY_UPDATE_ENCOUNTER
 --C_LootHistory.GetSortedDropsForEncounter(encounterID) : drops
+local private = select(2,...)
 LootTrackingActive = false
 ---@type id
 local currentId
@@ -56,6 +57,10 @@ local function SortRolls(left, right)
     return left.roll > right.roll
 end
 
+function private:SortRoster(left, right)
+    return string.lower(left.name) < string.lower(right.name)
+end
+
 ---Get number of Items won by player for given rollArt
 ---@param player string
 ---@param rollArt string
@@ -107,7 +112,6 @@ local function ErgebnisseAusgeben()
     local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls, currentId.items[currentItem].count)
     for _, win in pairs(gewinner) do
         local msg = win.rollArt .. ": " .. win.player:GetColoredName() .. " hat mit " .. win.roll .. " gewonnen!"
-        print(msg)
         SendChatMessage(msg, "RAID")
     end
     if #gewinner == currentId.items[currentItem].count then
@@ -115,12 +119,10 @@ local function ErgebnisseAusgeben()
     elseif #gewinner > currentId.items[currentItem].count then
         currentId.items[currentItem].gewinner = gewinner
         local msg = "Unentschieden! Bitte \"/ola reroll\" ausführen"
-        print(msg)
         SendChatMessage(msg, "RAID")
     else
         local msg = "Fehler beim ermitteln der Gewinner"
         currentId.items[currentItem] = nil
-        print(msg)
         SendChatMessage(msg, "RAID")
     end
 end
@@ -212,9 +214,6 @@ function ObisLootAddon:OnInitialize()
     currentId = ObisLootAddonDB.Ids[0] or currentIdDefault
     ObisLootAddon:LoadMinimap()
     ObisLootAddon:RegisterEvent("GROUP_FORMED")
-    ---@class player
-local player = ObisLootAddon:GetPlayer("Zackthyr")
-ObisLootAddon:AddToMainRoster(player)
 end
 
 function ObisLootAddon:GetRaidMembers()
@@ -222,17 +221,31 @@ function ObisLootAddon:GetRaidMembers()
     for i = 1, 40 do
         local name = GetRaidRosterInfo(i)
         if name then
-            table.insert(memberList, name)
+            local player = ObisLootAddon:GetPlayer(name)
+            table.insert(memberList, player)
         else
             break;
         end
     end
-    table.sort(memberList, function(left, right)
-        return string.lower(left) < string.lower(right)
-    end)
+    table.sort(memberList, private.SortRoster)
     return memberList
 end
 
+function ObisLootAddon:AddToCurrentId(player)
+    if not currentId.roster[player.guid] then
+        currentId.roster[player.guid] = player
+    end
+    table.sort(currentId.roster,private.SortRoster)
+end
+
+function ObisLootAddon:GetMemberNamesOfCurrentId()
+    local names = {}
+    for _,player in pairs(currentId.roster) do
+        ObisLootAddon:GetPLayer(player.guid)
+        table.insert(names, player:GetColoredName())
+    end
+    return names
+end
 
 function ObisLootAddon:GROUP_FORMED()
     ObisLootAddon:RegisterEvent("GROUP_JOINED")
@@ -244,5 +257,6 @@ function ObisLootAddon:GROUP_JOINED()
     for _, member in pairs(memberList) do
         local player = ObisLootAddon:GetPlayer(member)
         ObisLootAddon:AddToMainRoster(player)
+        ObisLootAddon:AddToCurrentId(player)
     end
 end
