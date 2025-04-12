@@ -18,6 +18,8 @@ libs/LibDBIcon-1.0/embeds.xml
 
 #Main Files
 core.lua
+player.lua
 gui.lua
 ObisLootAddon.lua
 Settings.lua
+MainRosterGUI.lua

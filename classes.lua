@@ -1,7 +1,7 @@
 ---@meta classes
 
 ---@class roll
----@field player string
+---@field player player
 ---@field roll integer
 ---@field rollArt string
 
@@ -17,3 +17,14 @@
 ---@field id integer
 ---@field items itemDict
 ---@field rerollArchive itemDict
+---@field roster string[]
+
+---@class player
+---@field name string
+---@field realm string
+---@field guid string
+---@field class string
+---@field coloredName string
+---@field isMain boolean
+
+---@class roster<guid, player>: {[string]: player}

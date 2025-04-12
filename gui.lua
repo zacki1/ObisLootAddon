@@ -1,20 +1,6 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local MainFrame = ObisLootAddon.Interface.MainFrame
-local classcolor = {
-	DEATHKNIGHT	= "C41E3A",
-	DEMONHUNTER	= "A330C9",
-	DRUID		= "FF7C0A",
-    EVOKER      = "33937F",
-	HUNTER		= "AAD372",
-	MAGE		= "3FC7EB",
-	MONK		= "00FF98",
-	PALADIN		= "F48CBA",
-	PRIEST		= "FFFFFF",
-	ROGUE		= "FFF468",
-	SHAMAN		= "0070DD",
-	WARLOCK		= "8788EE",
-	WARRIOR		= "C69B6D",
-}
+
 
 function ObisLootAddon:CreateMainFrame()
 	local frame = AceGUI:Create("Frame") --[[@as AceGUIFrame]]
@@ -60,11 +46,11 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	group:SetRelativeWidth(1)
 	group:SetLayout("Flow")
 	itemText:SetRelativeWidth(0.33)
-	itemText:SetImage(item:GetItemIcon())
+	itemText:SetImage(item:GetItemIcon() --[[@as number]])
 	itemText:SetText(itemLink)
 	itemText:SetFullHeight(false)
 	itemText:SetCallback("OnEnter", function (widget)
-		GameTooltip:SetOwner(itemText.label, "ANCHOR_TOP")
+		--GameTooltip:SetOwner(itemText.label, "ANCHOR_TOP")
 		GameTooltip:SetHyperlink(itemLink)
 		GameTooltip:Show()
 	end

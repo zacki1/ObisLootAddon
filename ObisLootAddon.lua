@@ -4,8 +4,6 @@
 --LOOT_HISTORY_UPDATE_ENCOUNTER
 --C_LootHistory.GetSortedDropsForEncounter(encounterID) : drops
 LootTrackingActive = false
----@type id[]
-local ids = {}
 ---@type id
 local currentId
 local IsReroll = false
@@ -13,7 +11,8 @@ local IsReroll = false
 local currentIdDefault = {
     id = 0,
     items = {},
-    rerollArchive = {}
+    rerollArchive = {},
+    roster = {}
 }
 ---@class item
 local currentItem
@@ -36,10 +35,9 @@ local function ParseRollText(text)
     else
         local name, roll, max =
             string.match(text, "(%a+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)")
-            name = GetUnitName(name, true)
-            print(name)
-        if not name then return nil end
-        return {player = name, roll = tonumber(roll), rollArt = rolls[tonumber(max)]}
+        local player = ObisLootAddon:GetPlayer(name)
+        if not player then return nil end
+        return {player = player, roll = tonumber(roll), rollArt = rolls[tonumber(max)]}
     end
 end
 
@@ -50,6 +48,9 @@ end
 local function SortRolls(left, right)
     if left.rollArt ~= right.rollArt then
         return rolls[left.rollArt] > rolls[right.rollArt]
+    end
+    if left.player.isMain ~= right.player.isMain then
+        return left.player.isMain
     end
 
     return left.roll > right.roll
@@ -76,19 +77,26 @@ end
 ---@return table
 local function ErmittleGewinner(rolls, count)
     local gewinner = {}
-    for i = 1,#rolls do
+    local i = 1
+    while(i <= #rolls) do
         local roll = rolls[i]
         local roll2 = rolls[i+1]
-        if not roll2 or roll.rollArt ~= roll2.rollArt then
+        if not roll2 or roll.rollArt ~= roll2.rollArt or roll.player.IsMain ~= roll2.player.IsMain then
             table.insert(gewinner, roll)
-        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) < GetCountWins(roll2.player,roll2.rollArt) then
-            table.insert(gewinner, roll)
-        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) == GetCountWins(roll2.player, roll2.rollArt) and roll.roll == roll2.roll then
-            table.insert(gewinner, roll)
-            table.insert(gewinner, roll2)
-        elseif roll.rollArt == roll2.rollArt and GetCountWins(roll.player, roll.rollArt) == GetCountWins(roll2.player, roll2.rollArt) and roll.roll > roll2.roll then
-            table.insert(gewinner, roll)
+        elseif roll.rollArt == roll2.rollArt then
+            if GetCountWins(roll.player, roll.rollArt) < GetCountWins(roll2.player,roll2.rollArt) then
+                table.insert(gewinner, roll)
+            elseif GetCountWins(roll.player, roll.rollArt) == GetCountWins(roll2.player, roll2.rollArt) then
+                if roll.roll == roll2.roll then
+                    table.insert(gewinner, roll)
+                    table.insert(gewinner, roll2)
+                    i = i + 1
+                elseif roll.roll > roll2.roll then
+                    table.insert(gewinner, roll)
+                end
+            end
         end
+        i = i + 1
         if #gewinner >= count then break end
     end
     return gewinner
@@ -98,7 +106,7 @@ local function ErgebnisseAusgeben()
     table.sort(currentId.items[currentItem].rolls, SortRolls)
     local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls, currentId.items[currentItem].count)
     for _, win in pairs(gewinner) do
-        local msg = win.rollArt .. ": " .. win.player .. " hat mit " .. win.roll .. " gewonnen!"
+        local msg = win.rollArt .. ": " .. win.player:GetColoredName() .. " hat mit " .. win.roll .. " gewonnen!"
         print(msg)
         SendChatMessage(msg, "RAID")
     end
@@ -118,24 +126,24 @@ local function ErgebnisseAusgeben()
 end
 
 ---Check if the given name has already rolled for the item
----@param player string
+---@param playerGuid string
 ---@return boolean
-local function HasAlreadyRolled(player)
+local function HasAlreadyRolled(playerGuid)
     local found = false
     for _, roll in pairs(currentId.items[currentItem].rolls) do
-        found = roll.player == player
+        found = roll.player.guid == playerGuid
         if found then break end
     end
     return found
 end
 
 ---Check on reroll if the player has already rolled for the item before
----@param player string
+---@param playerGuid string
 ---@return boolean
-local function IsRerollEligible(player)
+local function IsRerollEligible(playerGuid)
     local hasRolled = false
     for _,winner in pairs(currentId.rerollArchive[currentItem].gewinner) do
-        if winner.player == player then hasRolled = true end
+        if winner.guid == playerGuid then hasRolled = true end
     end
     return hasRolled
 end
@@ -143,10 +151,10 @@ end
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     local roll = ParseRollText(msg)
     if roll then
-        if not HasAlreadyRolled(roll.player) then
+        if not HasAlreadyRolled(roll.player.guid) then
             if not IsReroll then
                 table.insert(currentId.items[currentItem].rolls, roll)
-            elseif IsReroll and IsRerollEligible(roll.player) then
+            elseif IsReroll and IsRerollEligible(roll.player.guid) then
                 table.insert(currentId.items[currentItem].rolls, roll)
             end
         end
@@ -192,20 +200,21 @@ end
 ObisLootAddon:RegisterChatCommand("ola", Commands)
 
 function ObisLootAddon:GetInstanceInformation()
-	local zone, zonetype, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, mapid = GetInstanceInfo()
+	local zone, zonetype, difficultyIndex, difficultyName, _, _, _, _ = GetInstanceInfo()
     if(zonetype ~= "raid") then return nil end
 	return zone, zonetype, difficultyIndex, difficultyName
 end
 
 function ObisLootAddon:OnInitialize()
-    if not ObisLootAddonDB then
-        ObisLootAddonDB = {}
-    end
-    if not ObisLootAddonDB.Ids then
-        ObisLootAddonDB.Ids = {}
-    end
+    if not ObisLootAddonDB then ObisLootAddonDB = {} end
+    if not ObisLootAddonDB.Ids then ObisLootAddonDB.Ids = {} end
+    if not ObisLootAddonDB.MainRoster then ObisLootAddonDB.MainRoster = {} end
     currentId = ObisLootAddonDB.Ids[0] or currentIdDefault
     ObisLootAddon:LoadMinimap()
+    ObisLootAddon:RegisterEvent("GROUP_FORMED")
+    ---@class player
+local player = ObisLootAddon:GetPlayer("Zackthyr")
+ObisLootAddon:AddToMainRoster(player)
 end
 
 function ObisLootAddon:GetRaidMembers()
@@ -222,4 +231,18 @@ function ObisLootAddon:GetRaidMembers()
         return string.lower(left) < string.lower(right)
     end)
     return memberList
+end
+
+
+function ObisLootAddon:GROUP_FORMED()
+    ObisLootAddon:RegisterEvent("GROUP_JOINED")
+    ObisLootAddon:GROUP_JOINED()
+end
+
+function ObisLootAddon:GROUP_JOINED()
+    local memberList = ObisLootAddon:GetRaidMembers()
+    for _, member in pairs(memberList) do
+        local player = ObisLootAddon:GetPlayer(member)
+        ObisLootAddon:AddToMainRoster(player)
+    end
 end
