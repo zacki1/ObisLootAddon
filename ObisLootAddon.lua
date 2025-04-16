@@ -35,7 +35,8 @@ local function ParseRollText(text)
         return nil
     else
         local name, roll, max =
-            string.match(text, "(%a+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)")
+            strmatch(text, "(.+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)")
+        if not name then return nil end
         local player = ObisLootAddon:GetPlayer(name)
         if not player then return nil end
         return {player = player, roll = tonumber(roll), rollArt = rolls[tonumber(max)]}
@@ -62,14 +63,14 @@ function private.SortRoster(left, right)
 end
 
 ---Get number of Items won by player for given rollArt
----@param player string
+---@param player player
 ---@param rollArt string
 ---@return integer
 local function GetCountWins(player, rollArt)
     local count = 0
     for _, item in pairs(currentId.items) do
         for _, gewinner in pairs(item.gewinner) do
-            if gewinner.player == player and gewinner.rollArt == rollArt then count = count + 1 end
+            if gewinner.player.guid == player.guid and gewinner.rollArt == rollArt then count = count + 1 end
         end
     end
     return count
@@ -111,7 +112,7 @@ local function ErgebnisseAusgeben()
     table.sort(currentId.items[currentItem].rolls, SortRolls)
     local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls, currentId.items[currentItem].count)
     for _, win in pairs(gewinner) do
-        local msg = win.rollArt .. ": " .. win.player:GetColoredName() .. " hat mit " .. win.roll .. " gewonnen!"
+        local msg = win.rollArt .. ": " .. win.player.name .. " hat mit " .. win.roll .. " gewonnen!"
         SendChatMessage(msg, "RAID")
     end
     if #gewinner == currentId.items[currentItem].count then
@@ -126,7 +127,6 @@ local function ErgebnisseAusgeben()
         SendChatMessage(msg, "RAID")
     end
 end
-
 ---Check if the given name has already rolled for the item
 ---@param playerGuid string
 ---@return boolean
@@ -213,7 +213,7 @@ function ObisLootAddon:OnInitialize()
     if not ObisLootAddonDB.MainRoster then ObisLootAddonDB.MainRoster = {} end
     currentId = ObisLootAddonDB.Ids[0] or currentIdDefault
     ObisLootAddon:LoadMinimap()
-    ObisLootAddon:RegisterEvent("GROUP_FORMED")
+    ObisLootAddon:RegisterEvent("GROUP_ROSTER_UPDATE")
 end
 
 function ObisLootAddon:GetRaidMembers()
@@ -229,6 +229,8 @@ function ObisLootAddon:GetRaidMembers()
     return memberList
 end
 
+
+---@param player player
 function ObisLootAddon:AddToCurrentId(player)
     if not currentId.roster[player.guid] then
         currentId.roster[player.guid] = player
@@ -245,15 +247,19 @@ function ObisLootAddon:GetMemberNamesOfCurrentId()
     return names
 end
 
-function ObisLootAddon:GROUP_FORMED()
-    ObisLootAddon:RegisterEvent("GROUP_JOINED")
-    ObisLootAddon:GROUP_JOINED()
-end
-
-function ObisLootAddon:GROUP_JOINED()
+function ObisLootAddon:GROUP_ROSTER_UPDATE()
+    if not IsInRaid() then return end
     local memberList = ObisLootAddon:GetRaidMembers()
     for _, member in pairs(memberList) do
         ObisLootAddon:AddToMainRoster(member)
         ObisLootAddon:AddToCurrentId(member)
+    end
+end
+
+function ObisLootAddon:PrintListInChat(item)
+    local list = ObisLootAddonDB.Ids[0].items[item].rolls
+    for i,roll in pairs(list) do
+        local msg = i..". " .. roll.player.name .. " mit " .. roll.roll .. " " .. roll.rollArt
+        SendChatMessage(msg, "RAID")
     end
 end

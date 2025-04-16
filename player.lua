@@ -63,9 +63,7 @@ function ObisLootAddon:GetPlayer(playerid)
 		-- GUID with player
 		guid = playerid
 	elseif type(playerid) == "string" then
-        local name = string.match(playerid, "|cff%x%x%x%x%x%x(%w+)|r")
-        print(playerid)
-        print(name)
+        local name = string.match(playerid, "|cff%x%x%x%x%x%x(%a+)|r")
         if not name then
             name = Ambiguate(playerid, "none")
         end

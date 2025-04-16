@@ -50,6 +50,7 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	itemText:SetText(itemLink)
 	itemText:SetFullHeight(false)
 	itemText:SetCallback("OnEnter", function (widget)
+---@diagnostic disable-next-line: invisible
 		GameTooltip:SetOwner(itemText.frame, "ANCHOR_TOP")
 		GameTooltip:SetHyperlink(itemLink)
 		GameTooltip:Show()
@@ -66,8 +67,14 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	playerText:SetText(player:GetColoredName())
 	playerText:SetList(ObisLootAddon:GetMemberNamesOfCurrentId())
 	playerText:SetCallback("OnValueChanged", ChangeWinner)
+
+	local button = AceGUI:Create("Button")--[[@as AceGUIButton]]
+	button:SetText("Rolls ausgeben")
+	button:SetCallback("OnClick", function() ObisLootAddon:PrintListInChat(itemLink) end)
+
 	group:AddChild(itemText)
 	group:AddChild(playerText)
+	group:AddChild(button)
 	return group
 end
 
@@ -78,6 +85,6 @@ function ObisLootAddon:ToggleMainFrame()
 		if not ObisLootAddonDB.Ids[0] then return end
 		MainFrame:AddChild(ObisLootAddon:CreateItemList(ObisLootAddonDB.Ids[0]))
     else
-        MainFrame:Hide()
+        MainFrame:Release()
     end
 end

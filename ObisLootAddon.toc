@@ -15,6 +15,7 @@ libs/Ace3/AceEvent-3.0/AceEvent-3.0.lua
 libs/Ace3/AceConsole-3.0/AceConsole-3.0.lua
 libs/Ace3/AceGUI-3.0/AceGUI-3.0.lua
 libs/LibDBIcon-1.0/embeds.xml
+libs/LibUnitTest-1.0/LibUnitTest-1.0.lua
 
 #Main Files
 core.lua
@@ -23,3 +24,7 @@ gui.lua
 ObisLootAddon.lua
 Settings.lua
 MainRosterGUI.lua
+
+#Tests
+tests/ObisLootAddonTests.lua
+tests/PlayerTests.lua
