@@ -4,16 +4,19 @@
 --C_LootHistory.GetSortedDropsForEncounter(encounterID) : drops
 local private = select(2,...)
 LootTrackingActive = false
+
 ---@type id
-local currentId = {
+ObisLootAddon.currentId = {
     id = 0,
     items = {},
     rerollArchive = {},
     roster = {}
 }
+
 ---@class item
 ---@type item?
-local currentItem = nil
+ObisLootAddon.currentItem = nil
+
 ---@type {[integer | string]: string | integer}
 local rolls ={
     [100] = "mainspec",
@@ -47,7 +50,7 @@ end
 ---@param left roll
 ---@param right roll
 ---@return boolean
-local function SortRolls(left, right)
+function private.SortRolls(left, right)
     if left.rollArt ~= right.rollArt then
         return rolls[left.rollArt] > rolls[right.rollArt]
     end
@@ -68,7 +71,7 @@ end
 ---@return integer
 local function GetCountWins(player, rollArt)
     local count = 0
-    for _, item in pairs(currentId.items) do
+    for _, item in pairs(ObisLootAddon.currentId.items) do
         for _, gewinner in pairs(item.gewinner) do
             if gewinner.player.guid == player.guid and gewinner.rollArt == rollArt then count = count + 1 end
         end
@@ -109,22 +112,22 @@ local function ErmittleGewinner(rolls, count)
 end
 
 local function ErgebnisseAusgeben()
-    table.sort(currentId.items[currentItem].rolls, SortRolls)
-    local gewinner = ErmittleGewinner(currentId.items[currentItem].rolls, currentId.items[currentItem].count)
+    table.sort(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, SortRolls)
+    local gewinner = ErmittleGewinner(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count)
     for _, win in pairs(gewinner) do
         local msg = win.rollArt .. ": " .. win.player.name .. " hat mit " .. win.roll .. " gewonnen!"
         SendChatMessage(msg, "RAID")
     end
-    if #gewinner == currentId.items[currentItem].count then
-        currentId.items[currentItem].gewinner = gewinner
-    elseif #gewinner > currentId.items[currentItem].count then
-        currentId.items[currentItem].gewinner = gewinner
+    if #gewinner == ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count then
+        ObisLootAddon.currentId.items[ObisLootAddon.currentItem].gewinner = gewinner
+    elseif #gewinner > ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count then
+        ObisLootAddon.currentId.items[ObisLootAddon.currentItem].gewinner = gewinner
         local msg = "Unentschieden! Bitte \"/ola reroll\" ausführen"
         SendChatMessage(msg, "RAID")
     else
         local msg = "Fehler beim ermitteln der Gewinner"
-        if currentItem then
-            currentId.items[currentItem] = nil
+        if ObisLootAddon.currentItem then
+            ObisLootAddon.currentId.items[ObisLootAddon.currentItem] = nil
         end
         SendChatMessage(msg, "RAID")
     end
@@ -134,7 +137,7 @@ end
 ---@return boolean
 local function HasAlreadyRolled(playerGuid)
     local found = false
-    for _, roll in pairs(currentId.items[currentItem].rolls) do
+    for _, roll in pairs(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls) do
         found = roll.player.guid == playerGuid
         if found then break end
     end
@@ -146,20 +149,23 @@ end
 ---@return boolean
 local function IsRerollEligible(playerGuid)
     local hasRolled = false
-    for _,winner in pairs(currentId.rerollArchive[currentItem].gewinner) do
+    for _,winner in pairs(ObisLootAddon.rerollArchive[ObisLootAddon.currentItem].gewinner) do
         if winner.guid == playerGuid then hasRolled = true end
     end
     return hasRolled
 end
 
+
+
 function ObisLootAddon:CHAT_MSG_RAID(event, msg, player)
     if IsRecording then
         if strfind(msg, "|Hitem:") then
-            currentItem = msg
-            if not currentId.items[msg] then
-                currentId.items[msg] = {count = 1, gewinner = {}, rolls = {}}
+            ObisLootAddon.currentItem = msg
+            if not ObisLootAddon.currentId.items[msg] then
+                ObisLootAddon.currentId.items[msg] = {count = 1, gewinner = {}, rolls = {}}
             end
             ObisLootAddon:Print("Neues Item aufgezeichnet: " .. msg)
+            ObisLootAddon:UpdateRollDisplay()
         end
     end
 end
@@ -170,21 +176,24 @@ function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
         if not IsRecording then
             if not HasAlreadyRolled(roll.player.guid) then
                 if not IsReroll then
-                    table.insert(currentId.items[currentItem].rolls, roll)
+                    table.insert(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, roll)
+                    ObisLootAddon:UpdateRollDisplay()
                 elseif IsReroll and IsRerollEligible(roll.player.guid) then
-                    table.insert(currentId.items[currentItem].rolls, roll)
+                    table.insert(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, roll)
+                    ObisLootAddon:UpdateRollDisplay()
                 end
             end
         else
-            if currentItem and not HasAlreadyRolled(roll.player.guid) then
-                table.insert(currentId.items[currentItem].rolls, roll)
+            if ObisLootAddon.currentItem and not HasAlreadyRolled(roll.player.guid) then
+                table.insert(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, roll)
+                ObisLootAddon:UpdateRollDisplay()
             end
         end
     end
 end
 
 local function SaveId()
-    ObisLootAddonDB.Ids[currentId.id] = currentId
+    ObisLootAddonDB.Ids[ObisLootAddon.currentId.id] = ObisLootAddon.currentId
 end
 
 local function Commands(msg, editbox)
@@ -192,8 +201,8 @@ local function Commands(msg, editbox)
     if cmd == "post" and item then
         count = tonumber(count)
         if not count then count = 1 end
-        currentItem = item
-        currentId.items[currentItem] = {count = count,gewinner = {}, rolls = {}}
+        ObisLootAddon.currentItem = item
+        ObisLootAddon.currentId.items[item] = {count = count,gewinner = {}, rolls = {}}
         IsReroll = false
         SendChatMessage(item, "RAID")
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
@@ -202,35 +211,35 @@ local function Commands(msg, editbox)
         ErgebnisseAusgeben()
         SaveId()
     elseif cmd == "reroll" then
-        SendChatMessage("Reroll für: " .. currentItem, "RAID")
-        local origCount = currentId.items[currentItem].count
-        currentId.rerollArchive[currentItem] = currentId.items[currentItem]
-        currentId.items[currentItem] = {count = origCount,gewinner = {}, rolls = {}}
+        SendChatMessage("Reroll für: " .. ObisLootAddon.currentItem, "RAID")
+        local origCount = ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count
+        ObisLootAddon.rerollArchive[ObisLootAddon.currentItem] = ObisLootAddon.currentId.items[ObisLootAddon.currentItem]
+        ObisLootAddon.currentId.items[ObisLootAddon.currentItem] = {count = origCount,gewinner = {}, rolls = {}}
         IsReroll = true
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
     elseif cmd == "reset" then
         table.wipe(ObisLootAddonDB.Ids)
-        currentId = {
+        ObisLootAddon.currentId = {
             id = 0,
             items = {},
             rerollArchive = {},
             roster = {}
         }
     elseif cmd == "dump" then
-        DevTools_Dump(currentId)
+        DevTools_Dump(ObisLootAddon.currentId)
     elseif cmd == "record" then
         local subcmd = item
         if subcmd == "start" then
             IsRecording = true
-            currentItem = nil
+            ObisLootAddon.currentItem = nil
             ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
             ObisLootAddon:Print("Aufzeichnung gestartet")
         elseif subcmd == "stop" then
             IsRecording = false
-            currentItem = nil
+            ObisLootAddon.currentItem = nil
             ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
             ObisLootAddon:Print("Aufzeichnung beendet")
-        elseif subcmd == "winner" and currentItem then
+        elseif subcmd == "winner" and ObisLootAddon.currentItem then
             IsRecording = false
             ErgebnisseAusgeben()
             SaveId()
@@ -251,7 +260,7 @@ function ObisLootAddon:OnInitialize()
     if not ObisLootAddonDB then ObisLootAddonDB = {} end
     if not ObisLootAddonDB.Ids then ObisLootAddonDB.Ids = {} end
     if not ObisLootAddonDB.MainRoster then ObisLootAddonDB.MainRoster = {} end
-    currentId = ObisLootAddonDB.Ids[0] or currentId
+    ObisLootAddon.currentId = ObisLootAddonDB.Ids[0] or ObisLootAddon.currentId
     ObisLootAddon:LoadMinimap()
     ObisLootAddon:RegisterEvent("GROUP_ROSTER_UPDATE")
     ObisLootAddon:RegisterEvent("CHAT_MSG_RAID")
@@ -273,15 +282,15 @@ end
 
 ---@param player player
 function ObisLootAddon:AddToCurrentId(player)
-    if not currentId.roster[player.guid] then
-        currentId.roster[player.guid] = player
+    if not ObisLootAddon.currentId.roster[player.guid] then
+        ObisLootAddon.currentId.roster[player.guid] = player
     end
-    table.sort(currentId.roster,private.SortRoster)
+    table.sort(ObisLootAddon.currentId.roster,private.SortRoster)
 end
 
 function ObisLootAddon:GetMemberNamesOfCurrentId()
     local names = {}
-    for _,player in pairs(currentId.roster) do
+    for _,player in pairs(ObisLootAddon.currentId.roster) do
         player = ObisLootAddon:GetPlayer(player.guid)
         table.insert(names, player:GetColoredName())
     end
