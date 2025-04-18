@@ -51,7 +51,13 @@
         "TIME_UNIT_DELIMITER",
         "INT_SPELL_DURATION_MIN",
         "MergeTable",
-        "class"
+        "class",
+        "require",
+        "SECOND_ONELETTER_ABBR",
+        "LOCALE_enGB",
+        "SECONDS_ABBR",
+        "ChatFrame1",
+        "RAID_CLASS_COLORS"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
@@ -66,7 +72,9 @@
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "c:\\Users\\Stefan\\.cursor\\extensions\\ketho.wow-api-0.20.2\\Annotations\\Core",
-        "c:\\Users\\Stefan\\.cursor\\extensions\\ketho.wow-api-0.20.2\\Annotations\\FrameXML\\Manual"
+        "~\\.vscode\\extensions\\ketho.wow-api-0.20.6\\Annotations\\Core"
+    ],
+    "Lua.diagnostics.disable": [
+        "assign-type-mismatch"
     ]
 }

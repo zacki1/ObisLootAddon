@@ -24,7 +24,3 @@ gui.lua
 ObisLootAddon.lua
 Settings.lua
 MainRosterGUI.lua
-
-#Tests
-tests/ObisLootAddonTests.lua
-tests/PlayerTests.lua
