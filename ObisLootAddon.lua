@@ -1,4 +1,3 @@
-
 --ENCOUNTER_START
 --RAID_INSTANCE_WELCOME
 --LOOT_HISTORY_UPDATE_ENCOUNTER
@@ -6,17 +5,15 @@
 local private = select(2,...)
 LootTrackingActive = false
 ---@type id
-local currentId
-local IsReroll = false
----@type id
-local currentIdDefault = {
+local currentId = {
     id = 0,
     items = {},
     rerollArchive = {},
     roster = {}
 }
 ---@class item
-local currentItem
+---@type item?
+local currentItem = nil
 ---@type {[integer | string]: string | integer}
 local rolls ={
     [100] = "mainspec",
@@ -26,6 +23,9 @@ local rolls ={
     ["offspec"] = 50,
     ["transmog"] = 10,
 }
+
+local IsReroll = false
+local IsRecording = false
 
 ---Returns the values of the roll system message
 ---@param text string
@@ -123,7 +123,9 @@ local function ErgebnisseAusgeben()
         SendChatMessage(msg, "RAID")
     else
         local msg = "Fehler beim ermitteln der Gewinner"
-        currentId.items[currentItem] = nil
+        if currentItem then
+            currentId.items[currentItem] = nil
+        end
         SendChatMessage(msg, "RAID")
     end
 end
@@ -150,13 +152,31 @@ local function IsRerollEligible(playerGuid)
     return hasRolled
 end
 
+function ObisLootAddon:CHAT_MSG_RAID(event, msg, player)
+    if IsRecording then
+        if strfind(msg, "|Hitem:") then
+            currentItem = msg
+            if not currentId.items[msg] then
+                currentId.items[msg] = {count = 1, gewinner = {}, rolls = {}}
+            end
+            ObisLootAddon:Print("Neues Item aufgezeichnet: " .. msg)
+        end
+    end
+end
+
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     local roll = ParseRollText(msg)
     if roll then
-        if not HasAlreadyRolled(roll.player.guid) then
-            if not IsReroll then
-                table.insert(currentId.items[currentItem].rolls, roll)
-            elseif IsReroll and IsRerollEligible(roll.player.guid) then
+        if not IsRecording then
+            if not HasAlreadyRolled(roll.player.guid) then
+                if not IsReroll then
+                    table.insert(currentId.items[currentItem].rolls, roll)
+                elseif IsReroll and IsRerollEligible(roll.player.guid) then
+                    table.insert(currentId.items[currentItem].rolls, roll)
+                end
+            end
+        else
+            if currentItem and not HasAlreadyRolled(roll.player.guid) then
                 table.insert(currentId.items[currentItem].rolls, roll)
             end
         end
@@ -181,7 +201,6 @@ local function Commands(msg, editbox)
         ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
         ErgebnisseAusgeben()
         SaveId()
-
     elseif cmd == "reroll" then
         SendChatMessage("Reroll für: " .. currentItem, "RAID")
         local origCount = currentId.items[currentItem].count
@@ -189,12 +208,33 @@ local function Commands(msg, editbox)
         currentId.items[currentItem] = {count = origCount,gewinner = {}, rolls = {}}
         IsReroll = true
         ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
-
     elseif cmd == "reset" then
         table.wipe(ObisLootAddonDB.Ids)
-        currentId = currentIdDefault
+        currentId = {
+            id = 0,
+            items = {},
+            rerollArchive = {},
+            roster = {}
+        }
     elseif cmd == "dump" then
         DevTools_Dump(currentId)
+    elseif cmd == "record" then
+        local subcmd = item
+        if subcmd == "start" then
+            IsRecording = true
+            currentItem = nil
+            ObisLootAddon:RegisterEvent("CHAT_MSG_SYSTEM")
+            ObisLootAddon:Print("Aufzeichnung gestartet")
+        elseif subcmd == "stop" then
+            IsRecording = false
+            currentItem = nil
+            ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
+            ObisLootAddon:Print("Aufzeichnung beendet")
+        elseif subcmd == "winner" and currentItem then
+            IsRecording = false
+            ErgebnisseAusgeben()
+            SaveId()
+        end
     end
 end
 
@@ -211,9 +251,10 @@ function ObisLootAddon:OnInitialize()
     if not ObisLootAddonDB then ObisLootAddonDB = {} end
     if not ObisLootAddonDB.Ids then ObisLootAddonDB.Ids = {} end
     if not ObisLootAddonDB.MainRoster then ObisLootAddonDB.MainRoster = {} end
-    currentId = ObisLootAddonDB.Ids[0] or currentIdDefault
+    currentId = ObisLootAddonDB.Ids[0] or currentId
     ObisLootAddon:LoadMinimap()
     ObisLootAddon:RegisterEvent("GROUP_ROSTER_UPDATE")
+    ObisLootAddon:RegisterEvent("CHAT_MSG_RAID")
 end
 
 function ObisLootAddon:GetRaidMembers()
