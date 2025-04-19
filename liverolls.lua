@@ -1,8 +1,9 @@
 local private = select(2, ...)
 local AceGUI = LibStub("AceGUI-3.0")
 
+
 -- Roll Fenster
-local RollFrame
+local RollFrame = ObisLootAddon.Interface.RollFrame
 local ScrollContainer
 
 local function CreateRollFrame()
@@ -15,7 +16,7 @@ local function CreateRollFrame()
     RollFrame:SetLayout("Fill")
     RollFrame:EnableResize(true)
     RollFrame:SetCallback("OnClose", function(widget)
-        AceGUI:Release(widget)
+        widget:Release()
         RollFrame = nil
     end)
 
@@ -29,6 +30,20 @@ local function CreateRollFrame()
     ScrollContainer = AceGUI:Create("ScrollFrame")--[[@as AceGUIScrollFrame]]
     ScrollContainer:SetLayout("Flow")
     RollFrame:AddChild(ScrollContainer)
+
+    local actionButton = AceGUI:Create("Button")--[[@as AceGUIButton]]
+    actionButton:SetText("Würfeln beenden")
+    actionButton:SetCallback("OnClick", function(widget)
+            ObisLootAddon:ErmittleGewinner(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count)
+            ObisLootAddon:ErgebnisseAusgeben()
+            ObisLootAddon:SaveId()
+            ObisLootAddon.currentItem = nil
+            RollFrame:Release()
+    end)
+    actionButton:SetHeight(20)
+    actionButton:SetWidth(140)
+    actionButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 17, 17)
+    RollFrame:AddChild(actionButton)
 end
 
 function ObisLootAddon:UpdateRollDisplay()
@@ -126,21 +141,17 @@ SlashCmdList["OBISLOOTTEST"] = function()
                         return RAID_CLASS_COLORS[self.class]:WrapTextInColorCode(self.name)
                     end
                 },
-                roll = 50,
+                roll = 10,
                 rollArt = "mainspec"
             }
         }
     }
 
-    -- Setze Test-Daten
     ObisLootAddon.currentItem = testItem.itemLink
-    ObisLootAddon.currentId = {
-        items = {
-            [testItem.itemLink] = {
-                itemLink = testItem.itemLink,
-                rolls = testItem.rolls
-            }
-        }
+    ObisLootAddon.currentId.items[testItem.itemLink] = {
+        count = 1,
+        rolls = testItem.rolls,
+        gewinner = {}
     }
 
     -- Aktualisiere die Anzeige
