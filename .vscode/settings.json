@@ -57,7 +57,9 @@
         "LOCALE_enGB",
         "SECONDS_ABBR",
         "ChatFrame1",
-        "RAID_CLASS_COLORS"
+        "RAID_CLASS_COLORS",
+        "CHAT_MSG_RAID_LEADER",
+        "CHAT_MSG_RAID"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {
@@ -72,10 +74,10 @@
         "utf8": "disable"
     },
     "Lua.workspace.library": [
-        "c:\\Users\\Stefan\\.cursor\\extensions\\ketho.wow-api-0.20.2\\Annotations\\Core",
-        "c:\\Users\\Stefan\\.cursor\\extensions\\ketho.wow-api-0.20.2\\Annotations\\FrameXML\\Manual"
+        "c:\\Users\\Stefan\\.cursor\\extensions\\ketho.wow-api-0.20.6\\Annotations\\Core"
     ],
     "Lua.diagnostics.disable": [
         "assign-type-mismatch"
-    ]
+    ],
+    "Lua.type.weakUnionCheck": true
 }
