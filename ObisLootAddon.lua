@@ -158,26 +158,27 @@ function ObisLootAddon:SaveId()
     ObisLootAddonDB.Ids[ObisLootAddon.currentId.id] = ObisLootAddon.currentId
 end
 
-function ObisLootAddon:CHAT_MSG_RAID_LEADER(event, msg, player)
-    ObisLootAddon:CHAT_MSG_RAID(event,msg, player)
-end
-
 function ObisLootAddon:CHAT_MSG_RAID(event, msg, player)
     if IsRecording then
-        local _, count = string.gsub(msg, "|Hitem:", "")
-        if count == 1 then
+        local itemLink, count = strmatch(msg, "(|Hitem:[^|]+|h|r)%s*(%d*)")
+        if itemLink then
             if ObisLootAddon.currentItem then
                 ObisLootAddon:ErmittleGewinner(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count)
                 ObisLootAddon:SaveId()
             end
-            ObisLootAddon.currentItem = msg
-            if not ObisLootAddon.currentId.items[msg] then
-                ObisLootAddon.currentId.items[msg] = {count = 1, gewinner = {}, rolls = {}}
+            ObisLootAddon.currentItem = itemLink
+            count = tonumber(count) or 1
+            if not ObisLootAddon.currentId.items[itemLink] then
+                ObisLootAddon.currentId.items[itemLink] = {count = count, gewinner = {}, rolls = {}}
             end
-            ObisLootAddon:Print("Neues Item aufgezeichnet: " .. msg)
+            ObisLootAddon:Print("Neues Item aufgezeichnet: " .. itemLink .. (count > 1 and " x" .. count or ""))
             ObisLootAddon:UpdateRollDisplay()
         end
     end
+end
+
+function ObisLootAddon:CHAT_MSG_RAID_LEADER(event, msg, player)
+    ObisLootAddon:CHAT_MSG_RAID(event,msg, player)
 end
 
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
