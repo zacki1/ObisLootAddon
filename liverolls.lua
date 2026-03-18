@@ -47,6 +47,11 @@ local function CreateRollFrame()
     actionButton:SetHeight(20)
     actionButton:SetWidth(140)
     actionButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 17, 17)
+    -- Only show stop button for managers
+    if not ObisLootAddon:IsManager() then
+---@diagnostic disable-next-line: invisible
+        actionButton.frame:Hide()
+    end
     RollFrame:AddChild(actionButton)
 end
 
@@ -97,67 +102,4 @@ function ObisLootAddon:UpdateRollDisplay()
     end
 
     RollFrame:Show()
-end
-
--- Test-Kommando
-SLASH_OBISLOOTTEST1 = "/obistest"
-SlashCmdList["OBISLOOTTEST"] = function()
-    -- Erstelle Test-Daten
-    local testItem = {
-        itemLink = "|cffa335ee|Hitem:19019::::::::60:::::::|h[Thunderfury, Blessed Blade of the Windseeker]|h|r",
-        rolls = {
-            {
-                player = {
-                    name = "Testspieler1",
-                    class = "WARRIOR",
-                    guid = "Player-1234-5678",
-                    realm = "Testrealm",
-                    isMain = true,
-                    GetColoredName = function(self)
-                        return RAID_CLASS_COLORS[self.class]:WrapTextInColorCode(self.name)
-                    end
-                },
-                roll = 100,
-                rollArt = "mainspec"
-            },
-            {
-                player = {
-                    name = "Testspieler2",
-                    class = "PRIEST",
-                    guid = "Player-2345-6789",
-                    realm = "Testrealm",
-                    isMain = false,
-                    GetColoredName = function(self)
-                        return RAID_CLASS_COLORS[self.class]:WrapTextInColorCode(self.name)
-                    end
-                },
-                roll = 45,
-                rollArt = "offspec"
-            },
-            {
-                player = {
-                    name = "Testspieler3",
-                    class = "MAGE",
-                    guid = "Player-3456-7890",
-                    realm = "Testrealm",
-                    isMain = true,
-                    GetColoredName = function(self)
-                        return RAID_CLASS_COLORS[self.class]:WrapTextInColorCode(self.name)
-                    end
-                },
-                roll = 10,
-                rollArt = "mainspec"
-            }
-        }
-    }
-
-    ObisLootAddon.currentItem = testItem.itemLink
-    ObisLootAddon.currentId.items[testItem.itemLink] = {
-        count = 1,
-        rolls = testItem.rolls,
-        gewinner = {}
-    }
-
-    -- Aktualisiere die Anzeige
-    ObisLootAddon:UpdateRollDisplay()
 end

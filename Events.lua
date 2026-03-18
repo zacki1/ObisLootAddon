@@ -302,6 +302,18 @@ local function Commands(msg)
             ObisLootAddon:ErgebnisseAusgeben()
             ObisLootAddon:SaveId()
         end
+
+    elseif cmd == "debug" then
+        local subcmd = item
+        if subcmd == "loot" then
+            ObisLootAddon:DebugSimulateLoot()
+        elseif subcmd == "draw" then
+            ObisLootAddon:DebugSimulateDraw()
+        else
+            ObisLootAddon:Print("Debug Befehle:")
+            ObisLootAddon:Print("  /ola debug loot  - Simuliert einen Loot-Drop")
+            ObisLootAddon:Print("  /ola debug draw  - Simuliert ein Unentschieden")
+        end
     end
 end
 
