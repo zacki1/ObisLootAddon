@@ -103,6 +103,50 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	group:AddChild(itemText)
 	group:AddChild(playerText)
 	group:AddChild(button)
+
+	-- Trade controls (manager only)
+	if ObisLootAddon:IsManager() then
+		local traded = ObisLootAddon:IsTraded(itemLink, gewinner.player.guid)
+
+		if traded then
+			local tradedLabel = AceGUI:Create("Label")--[[@as AceGUILabel]]
+			tradedLabel:SetText("|cff00ff00Gehandelt|r")
+			tradedLabel:SetRelativeWidth(0.33)
+			group:AddChild(tradedLabel)
+		else
+			local tradeButton = AceGUI:Create("Button")--[[@as AceGUIButton]]
+			local winnerName = gewinner.player.name
+
+			-- Update range indicator on a ticker
+			local function UpdateRangeText()
+				local inRange = ObisLootAddon:IsInTradeRange(winnerName)
+				if inRange then
+					tradeButton:SetText("|cff00ff00●|r Handeln")
+				else
+					tradeButton:SetText("|cffff0000●|r Handeln")
+				end
+			end
+			UpdateRangeText()
+
+			tradeButton:SetRelativeWidth(0.33)
+			tradeButton:SetCallback("OnClick", function()
+				ObisLootAddon:StartTrade(winnerName, itemLink)
+			end)
+			group:AddChild(tradeButton)
+
+			-- Range ticker: update every 2 seconds, cancel on release
+			local ticker = C_Timer.NewTicker(2, function()
+---@diagnostic disable-next-line: invisible
+				if group.frame and group.frame:IsShown() then
+					UpdateRangeText()
+				end
+			end)
+			group:SetCallback("OnRelease", function()
+				ticker:Cancel()
+			end)
+		end
+	end
+
 	return group
 end
 

@@ -6,10 +6,17 @@
 ---@field roll integer
 ---@field rollArt string
 
+---@class tradeInfo
+---@field itemLink string
+---@field winnerGuid string
+---@field traded boolean
+---@field tradedAt string?
+
 ---@class itemRoll
 ---@field count integer
 ---@field rolls roll[]
 ---@field gewinner roll[]
+---@field traded {[string]: string}?
 
 ---@class itemDict<itemLink, itemroll>: { [string]: itemRoll}
 

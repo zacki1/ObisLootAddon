@@ -49,6 +49,9 @@ function ObisLootAddon:OnInitialize()
     self:RegisterEvent("CHAT_MSG_RAID")
     self:RegisterEvent("CHAT_MSG_RAID_LEADER")
     self:RegisterEvent("START_LOOT_ROLL")
+    self:RegisterEvent("TRADE_SHOW")
+    self:RegisterEvent("UI_INFO_MESSAGE")
+    self:RegisterEvent("TRADE_CLOSED")
 end
 
 -- Minimap button (previously Settings.lua)

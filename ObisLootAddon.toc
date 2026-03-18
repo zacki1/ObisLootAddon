@@ -22,6 +22,7 @@ ObisLoot.lua
 player.lua
 Core.lua
 Events.lua
+TradeAssistant.lua
 
 # UI (one file per window)
 gui.lua
