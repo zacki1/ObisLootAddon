@@ -27,6 +27,9 @@ ObisLootAddon.ROLL_PATTERN = "(.+) würfelt. Ergebnis: (%d+) %(1%-(%d+)%)"
 
 function ObisLootAddon:SaveId()
     ObisLootAddonDB.Ids[self.currentId.id] = self.currentId
+    if self.currentId.raidId then
+        ObisLootAddonDB.History[self.currentId.raidId] = self.currentId
+    end
 end
 
 function ObisLootAddon:GetInstanceInformation()
@@ -39,11 +42,13 @@ function ObisLootAddon:OnInitialize()
     if not ObisLootAddonDB then ObisLootAddonDB = {} end
     if not ObisLootAddonDB.Ids then ObisLootAddonDB.Ids = {} end
     if not ObisLootAddonDB.MainRoster then ObisLootAddonDB.MainRoster = {} end
+    if not ObisLootAddonDB.History then ObisLootAddonDB.History = {} end
     self.currentId = ObisLootAddonDB.Ids[0] or self.currentId
     self:LoadMinimap()
     self:RegisterEvent("GROUP_ROSTER_UPDATE")
     self:RegisterEvent("CHAT_MSG_RAID")
     self:RegisterEvent("CHAT_MSG_RAID_LEADER")
+    self:RegisterEvent("START_LOOT_ROLL")
 end
 
 -- Minimap button (previously Settings.lua)

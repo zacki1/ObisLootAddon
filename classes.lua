@@ -16,6 +16,10 @@
 
 ---@class id
 ---@field id integer
+---@field raidId string?
+---@field zone string?
+---@field difficulty string?
+---@field date string?
 ---@field items itemDict
 ---@field rerollArchive itemDict
 ---@field roster roster
@@ -27,3 +31,11 @@
 ---@field class string
 ---@field coloredName string
 ---@field isMain boolean
+
+---@class raidHistory
+---@field raidId string
+---@field zone string
+---@field difficulty string
+---@field date string
+---@field items itemDict
+---@field roster roster

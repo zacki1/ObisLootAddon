@@ -5,6 +5,28 @@ local Core = ObisLootAddon.Core
 local IsReroll = false
 local IsRecording = false
 
+---Resolve the current player's name for raid roster comparison
+local myName = nil
+
+---Check if the current player is a raid manager (leader or assist)
+---@return boolean
+local function IsPlayerManager()
+    if not myName then myName = UnitName("player") end
+    for i = 1, 40 do
+        local name, rank = GetRaidRosterInfo(i)
+        if name and Ambiguate(name, "none") == myName then
+            return Core.IsManager(rank)
+        end
+    end
+    return false
+end
+
+---Public permission check for UI files
+---@return boolean
+function ObisLootAddon:IsManager()
+    return IsPlayerManager()
+end
+
 ---Parse a roll system message and resolve the player
 ---@param text string
 ---@return roll?
@@ -73,6 +95,23 @@ function ObisLootAddon:CHAT_MSG_RAID_LEADER(event, msg, player)
     self:CHAT_MSG_RAID(event, msg, player)
 end
 
+---Detect epic+ items from boss loot the moment they drop
+function ObisLootAddon:START_LOOT_ROLL(_, rollID)
+    if not IsInRaid() then return end
+
+    local _, _, _, quality, _, _, _, _, _, _, _, _, _, _, itemLink = GetLootRollItemInfo(rollID)
+    if not itemLink then return end
+    if not Core.IsLootRelevant(quality, 4) then return end
+
+    if not self.currentId.items[itemLink] then
+        self.currentId.items[itemLink] = { count = 1, gewinner = {}, rolls = {} }
+        self:Print("Boss-Loot erkannt: " .. itemLink)
+    else
+        self.currentId.items[itemLink].count = self.currentId.items[itemLink].count + 1
+        self:Print("Boss-Loot erkannt: " .. itemLink .. " x" .. self.currentId.items[itemLink].count)
+    end
+end
+
 ---Process incoming roll system messages
 function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     local roll = ParseRollMessage(msg)
@@ -99,11 +138,47 @@ function ObisLootAddon:CHAT_MSG_SYSTEM(event, msg)
     end
 end
 
+---Generate a unique raid ID from instance info and date.
+---Returns nil for non-raid instances and LFR (difficulties 7, 17).
+---@return string? raidId, string? zone, string? difficultyName, string? dateStr
+local function GetOrCreateRaidId()
+    local zone, _, difficultyIndex, difficultyName = ObisLootAddon:GetInstanceInformation()
+    if not zone then return nil end
+    if difficultyIndex == 7 or difficultyIndex == 17 then return nil end
+    local dateStr = date("%Y-%m-%d")
+    local raidId = zone .. "-" .. difficultyIndex .. "-" .. dateStr
+    return raidId, zone, difficultyName, dateStr
+end
+
 ---Update roster when group composition changes
 function ObisLootAddon:GROUP_ROSTER_UPDATE()
     if not IsInRaid() then return end
-    local _, _, difficultyIndex = GetInstanceInfo()
-    if difficultyIndex == 7 or difficultyIndex == 17 then return end
+
+    -- Create or resume raid ID (nil when not in a raid instance or in LFR)
+    local raidId, zone, difficultyName, dateStr = GetOrCreateRaidId()
+    if raidId and self.currentId.raidId ~= raidId then
+        -- Save current if it has data
+        if self.currentId.raidId then
+            ObisLootAddonDB.History[self.currentId.raidId] = self.currentId
+        end
+        -- Resume existing or create new
+        if ObisLootAddonDB.History[raidId] then
+            self.currentId = ObisLootAddonDB.History[raidId]
+        else
+            self.currentId = {
+                id = 0,
+                raidId = raidId,
+                zone = zone,
+                difficulty = difficultyName,
+                date = dateStr,
+                items = {},
+                rerollArchive = {},
+                roster = {},
+            }
+        end
+        ObisLootAddonDB.Ids[0] = self.currentId
+    end
+
     local memberList = self:GetRaidMembers()
     for _, member in pairs(memberList) do
         self:AddToMainRoster(member)
@@ -157,6 +232,13 @@ end
 -- Slash commands (/ola)
 local function Commands(msg)
     local cmd, item, count = ObisLootAddon:GetArgs(msg, 3)
+
+    local isManager = IsPlayerManager()
+    local viewerAllowed = { roll = true, dump = true }
+    if not isManager and not viewerAllowed[cmd] then
+        ObisLootAddon:Print("Nur Raidleiter und Assists können diesen Befehl nutzen.")
+        return
+    end
 
     if cmd == "post" and item then
         count = tonumber(count) or 1
