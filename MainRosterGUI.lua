@@ -1,6 +1,6 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local RosterMainFrame = ObisLootAddon.Interface.RosterMainFrame
-local private = select(2, ...)
+local Core = ObisLootAddon.Core
 
 local function ChangeRosterPlayer(widget, _, value)
     local player = widget:GetUserData("player")
@@ -13,7 +13,7 @@ local function GetSortedRoster()
         table.insert(sortedList, player)
     end
 
-    table.sort(sortedList, private.SortRoster)
+    table.sort(sortedList, Core.SortRoster)
 
     return sortedList
 end
@@ -38,6 +38,9 @@ function ObisLootAddon:CreateRosterMainFrame()
     local frame = AceGUI:Create("Frame") --[[@as AceGUIFrame]]
     frame:SetLayout("Fill")
     frame:SetTitle("Mains")
+    frame:SetStatusText("")
+---@diagnostic disable-next-line: invisible
+    frame.statustext:GetParent():Hide()
     frame:SetCallback("OnClose", function (widget) AceGUI:Release(widget) end)
     local scroll = AceGUI:Create("ScrollFrame")--[[@as AceGUIScrollFrame]]
     scroll:SetLayout("Flow")

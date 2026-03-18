@@ -7,6 +7,9 @@ function ObisLootAddon:CreateMainFrame()
 	frame:SetCallback("OnClose", function (widget) AceGUI:Release(widget) end)
 	frame:SetTitle("Obis Loot Addon")
 	frame:SetLayout("Fill")
+	frame:SetStatusText("")
+---@diagnostic disable-next-line: invisible
+	frame.statustext:GetParent():Hide()
 	return frame
 end
 ---Create a list of items and their winners in a scrollframe
@@ -61,12 +64,26 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 	end)
 	local playerText = AceGUI:Create("Dropdown")--[[@as AceGUIDropdown]]
 	local player = ObisLootAddon:GetPlayer(gewinner.player.guid)
+	local names = ObisLootAddon:GetMemberNamesOfCurrentId()
 	playerText:SetLabel("Gewinner: ")
 	playerText:SetUserData("item", itemLink)
 	playerText:SetUserData("winner", gewinner)
 	playerText:SetText(player:GetColoredName())
-	playerText:SetList(ObisLootAddon:GetMemberNamesOfCurrentId())
+	playerText:SetList(names)
 	playerText:SetCallback("OnValueChanged", ChangeWinner)
+
+	-- Dynamic pullout height: fits entries but never exceeds main frame
+---@diagnostic disable-next-line: invisible, undefined-field
+	playerText.button:HookScript("OnClick", function()
+---@diagnostic disable-next-line: undefined-field
+		if playerText.pullout then
+			local listHeight = #names * 20 + 16
+---@diagnostic disable-next-line: invisible
+			local frameHeight = MainFrame.frame:GetHeight()
+---@diagnostic disable-next-line: undefined-field
+			playerText.pullout:SetMaxHeight(math.min(listHeight, frameHeight))
+		end
+	end)
 
 	local button = AceGUI:Create("Button")--[[@as AceGUIButton]]
 	button:SetText("Rolls ausgeben")

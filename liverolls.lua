@@ -1,5 +1,5 @@
-local private = select(2, ...)
 local AceGUI = LibStub("AceGUI-3.0")
+local Core = ObisLootAddon.Core
 
 
 -- Roll Fenster
@@ -23,6 +23,10 @@ local function CreateRollFrame()
     RollFrame:ClearAllPoints()
     RollFrame:SetPoint("RIGHT", UIParent, "RIGHT", -250, 0)
 
+    RollFrame:SetStatusText("")
+---@diagnostic disable-next-line: invisible
+    RollFrame.statustext:GetParent():Hide()
+
 ---@diagnostic disable-next-line: invisible
     local frame = RollFrame.frame
     frame:SetResizeBounds(300, 200, 300, 800)
@@ -33,8 +37,8 @@ local function CreateRollFrame()
 
     local actionButton = AceGUI:Create("Button")--[[@as AceGUIButton]]
     actionButton:SetText("Würfeln beenden")
-    actionButton:SetCallback("OnClick", function(widget)
-            ObisLootAddon:ErmittleGewinner(ObisLootAddon.currentId.items[ObisLootAddon.currentItem].rolls, ObisLootAddon.currentId.items[ObisLootAddon.currentItem].count)
+    actionButton:SetCallback("OnClick", function()
+            ObisLootAddon:UnregisterEvent("CHAT_MSG_SYSTEM")
             ObisLootAddon:ErgebnisseAusgeben()
             ObisLootAddon:SaveId()
             ObisLootAddon.currentItem = nil
@@ -72,7 +76,7 @@ function ObisLootAddon:UpdateRollDisplay()
     if not itemData then return end
 
     local rolls = itemData.rolls
-    table.sort(rolls, private.SortRolls)
+    table.sort(rolls, Core.SortRolls)
 
     if #rolls == 0 then
         local label = AceGUI:Create("Label")--[[@as AceGUILabel]]
