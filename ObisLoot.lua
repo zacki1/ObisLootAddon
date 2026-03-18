@@ -57,7 +57,7 @@ end
 -- Minimap button (previously Settings.lua)
 local MinimapButton = LibStub("LibDBIcon-1.0", true)
 local miniButton = LibStub("LibDataBroker-1.1"):NewDataObject("ObisLootAddon", {
-    type = "data source",
+    type = "launcher",
     text = "Obis Loot Addon",
     icon = "Interface\\AddOns\\ObisLootAddon\\minimap.tga",
     OnClick = function(self, btn)
@@ -73,6 +73,14 @@ local miniButton = LibStub("LibDataBroker-1.1"):NewDataObject("ObisLootAddon", {
     end,
 })
 
+---Check if an LDB display addon is active and will handle launcher buttons
+local function HasLDBDisplay()
+    local ldb = LibStub("LibDataBroker-1.1")
+    local events = ldb.callbacks and ldb.callbacks.events
+    local listeners = events and events["LibDataBroker_DataObjectCreated"]
+    return listeners and next(listeners) ~= nil
+end
+
 function ObisLootAddon:LoadMinimap()
     self.db = LibStub("AceDB-3.0"):New("MinimapPOS", {
         profile = {
@@ -80,5 +88,12 @@ function ObisLootAddon:LoadMinimap()
         },
     })
     MinimapButton:Register("ObisLootAddon", miniButton, self.db.profile.minimap)
-    MinimapButton:Show("ObisLootAddon")
+    -- Delay the display check so all addons have registered their callbacks
+    C_Timer.After(0, function()
+        if HasLDBDisplay() then
+            MinimapButton:Hide("ObisLootAddon")
+        elseif not self.db.profile.minimap.hide then
+            MinimapButton:Show("ObisLootAddon")
+        end
+    end)
 end

@@ -179,6 +179,8 @@ function ObisLootAddon:GROUP_ROSTER_UPDATE()
         ObisLootAddonDB.Ids[0] = self.currentId
     end
 
+    if not raidId then return end
+
     local memberList = self:GetRaidMembers()
     for _, member in pairs(memberList) do
         self:AddToMainRoster(member)

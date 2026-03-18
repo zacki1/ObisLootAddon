@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(which lua*)",
+      "Read(//usr/**)",
+      "Bash(flatpak list:*)",
+      "Bash(lua tests.lua)",
+      "Bash(grep -r \"C_Loot\\\\|LOOT_\\\\|ENCOUNTER_\\\\|BOSS_\" '/run/media/zacki/DE268A9D268A75F5/Games/World of Warcraft/_retail_/Interface/AddOns/ObisLootAddon' --include=*.lua)"
+    ]
+  }
+}

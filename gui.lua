@@ -79,16 +79,18 @@ function ObisLootAddon:CreateItemListItem(itemLink, gewinner)
 		playerText:SetDisabled(true)
 	end
 
-	-- Dynamic pullout height: fits entries but never exceeds main frame
+	-- Dynamic pullout size: fits entries but never exceeds main frame
 ---@diagnostic disable-next-line: invisible, undefined-field
 	playerText.button:HookScript("OnClick", function()
 ---@diagnostic disable-next-line: undefined-field
 		if playerText.pullout then
-			local listHeight = #names * 20 + 16
+			local listHeight = #names * 24 + 16
 ---@diagnostic disable-next-line: invisible
 			local frameHeight = MainFrame.frame:GetHeight()
 ---@diagnostic disable-next-line: undefined-field
 			playerText.pullout:SetMaxHeight(math.min(listHeight, frameHeight))
+---@diagnostic disable-next-line: invisible, undefined-field
+			playerText.pullout.frame:SetWidth(math.max(200, playerText.frame:GetWidth()))
 		end
 	end)
 
@@ -238,6 +240,18 @@ function ObisLootAddon:ToggleMainFrame()
         if self.currentId.raidId then
             historyDropdown:SetValue(self.currentId.raidId)
         end
+
+---@diagnostic disable-next-line: invisible, undefined-field
+        historyDropdown.button:HookScript("OnClick", function()
+---@diagnostic disable-next-line: undefined-field
+            if historyDropdown.pullout then
+                local listHeight = #historyOrder * 24 + 16
+---@diagnostic disable-next-line: invisible
+                local frameHeight = MainFrame.frame:GetHeight()
+---@diagnostic disable-next-line: undefined-field
+                historyDropdown.pullout:SetMaxHeight(math.min(listHeight, frameHeight))
+            end
+        end)
 
         local contentScroll
 
