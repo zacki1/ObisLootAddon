@@ -59,7 +59,8 @@
         "ChatFrame1",
         "RAID_CLASS_COLORS",
         "CHAT_MSG_RAID_LEADER",
-        "CHAT_MSG_RAID"
+        "CHAT_MSG_RAID",
+        "ERR_TRADE_COMPLETE"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

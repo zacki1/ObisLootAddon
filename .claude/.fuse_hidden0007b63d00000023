@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(which lua*)",
+      "Read(//usr/**)",
+      "Bash(flatpak list:*)",
+      "Bash(lua tests.lua)"
+    ]
+  }
+}

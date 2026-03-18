@@ -2,7 +2,7 @@
 ## Title: ObisLootAddon
 ## Notes: Für mehr Überblick beim Loot verteilen
 ## Author: zacki
-## Version: 2.0.0
+## Version: 2.1.0
 ## X-Curse-Project-ID: 999999
 ## SavedVariables: ObisLootAddonDB
 
@@ -22,8 +22,8 @@ ObisLoot.lua
 player.lua
 Core.lua
 Events.lua
-DebugMode.lua
 TradeAssistant.lua
+DebugMode.lua
 
 # UI (one file per window)
 gui.lua

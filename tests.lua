@@ -317,6 +317,44 @@ test("not eligible with empty winners", function()
 end)
 
 
+-- ===================== IsManager =====================
+print("\n=== IsManager ===")
+
+test("rank 2 (leader) is manager", function()
+    assertTrue(Core.IsManager(2))
+end)
+
+test("rank 1 (assist) is manager", function()
+    assertTrue(Core.IsManager(1))
+end)
+
+test("rank 0 (member) is not manager", function()
+    assertFalse(Core.IsManager(0))
+end)
+
+test("nil rank is not manager", function()
+    assertFalse(Core.IsManager(nil))
+end)
+
+-- ===================== IsLootRelevant =====================
+print("\n=== IsLootRelevant ===")
+
+test("epic quality is relevant at default threshold", function()
+    assertTrue(Core.IsLootRelevant(4, 4))
+end)
+
+test("rare quality is not relevant at epic threshold", function()
+    assertFalse(Core.IsLootRelevant(3, 4))
+end)
+
+test("legendary quality is relevant at epic threshold", function()
+    assertTrue(Core.IsLootRelevant(5, 4))
+end)
+
+test("nil quality returns false", function()
+    assertFalse(Core.IsLootRelevant(nil, 4))
+end)
+
 -- ===================== SUMMARY =====================
 print(string.format("\n=== Results: %d/%d passed, %d failed ===\n", passed, total, failed))
 if failed > 0 then os.exit(1) end

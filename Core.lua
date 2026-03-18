@@ -132,6 +132,23 @@ function Core.IsRerollEligible(playerGuid, rerollGewinner)
     return false
 end
 
+---Check if a player's raid rank grants manager permissions
+---@param raidRank integer? 0=member, 1=assist, 2=leader
+---@return boolean
+function Core.IsManager(raidRank)
+    if not raidRank then return false end
+    return raidRank >= 1
+end
+
+---Check if a loot item meets the quality threshold
+---@param quality integer? Item quality (0=Poor..5=Legendary)
+---@param threshold integer Minimum quality to consider relevant
+---@return boolean
+function Core.IsLootRelevant(quality, threshold)
+    if not quality then return false end
+    return quality >= threshold
+end
+
 -- Attach to addon in WoW environment
 if ObisLootAddon then
     ObisLootAddon.Core = Core
